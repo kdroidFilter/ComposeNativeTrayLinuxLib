@@ -1,207 +1,66 @@
-# Systray
+# Linux Tray Bridge for Compose Native Tray
 
-systray is a Linux-only Go library to place an icon and menu in the notification area.
-This repository is a fork of [getlantern/systray](https://github.com/getlantern/systray)
-removing the GTK dependency and support for legacy linux system tray.
+This module provides the Linux tray backend used by Compose Native Tray. It is a thin Go library compiled as a shared object (libsystray.so) and consumed from Kotlin/JVM via JNA.
 
-## Features
+It is a fork of https://github.com/energye/systray that was refactored and packaged to be used as a native tray bridge in Compose Native Tray (Compose Multiplatform Desktop). GTK and legacy XEmbed tray code are removed in favor of a StatusNotifier/AppIndicator implementation over DBus.
 
-* Supported on Linux and many BSD systems
-* Menu items can be checked and/or disabled
-* Methods may be called from any Goroutine
-* tray icon supports mouse click, double click, and right click
+- Upstream base: getlantern/systray → energye/systray → this fork
+- Purpose here: produce a small, self-contained Linux .so with an exported C API that maps directly to Kotlin/JNA in Compose Native Tray
 
-## API
+Screenshots of the final integration live in the repository root under `screenshots/`.
 
-```go
-package main
+## What you get
 
-import "github.com/energye/systray"
-import "github.com/energye/systray/icon"
+- Linux-only, DBus-based system tray implementation (StatusNotifier/AppIndicator)
+- Click, double-click, and right-click support
+- Dynamic menu building, submenus, separators, checkable items, show/hide/enable/disable, and per-item icons
+- A stable C ABI exported by libsystray.so for use with JNA from Kotlin
 
-func main() {
-	systray.Run(onReady, onExit)
-}
+## Where this library is used
 
-func onReady() {
-	systray.SetIcon(icon.Data)
-	systray.SetTitle("Awesome App")
-	systray.SetTooltip("Pretty awesome超级棒")
-	systray.SetOnClick(func() {
-		fmt.Println("SetOnClick")
-	})
-	systray.SetOnDClick(func() {
-		fmt.Println("SetOnDClick")
-	})
-	systray.SetOnRClick(func(menu systray.IMenu) {
-		menu.ShowMenu()
-		fmt.Println("SetOnRClick")
-	})
-	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
+Compose Native Tray loads this library on Linux through JNA. A prebuilt binary is included:
 
-	// Sets the icon of a menu item.
-	mQuit.SetIcon(icon.Data)
-}
+- Prebuilt .so: `src/commonMain/resources/linux-x86-64/libsystray.so`
 
-func onExit() {
-	// clean up here
-}
-```
+If you replace or rebuild the library, ensure the replacement matches the exported API described below.
 
-### Run in another toolkit
+## Building from source
 
-Most graphical toolkits will grab the main loop so the `Run` code above is not possible.
-For this reason there is another entry point `RunWithExternalLoop`.
-This function of the library returns a start and end function that should be called
-when the application has started and will end, to loop in appropriate features.
+Prerequisites:
+- Linux
+- Go with CGO enabled (CGO_ENABLED=1)
+- A C toolchain (e.g., gcc)
 
-Note: this package requires cgo, so make sure you set `CGO_ENABLED=1` before building.
+Options:
 
-## Try the example app!
+1) With Makefile (recommended)
 
-Have go v1.12+ or higher installed? Here's an example to get started on Linux:
-
-```sh
-git clone https://github.com/energye/systray
-cd systray/example
-go run .
-```
-
-Now look for *Awesome App* in your system tray!
-
-![Awesome App screenshot](example/demo.png)
-
-## Platform notes
-
-### Linux/BSD
-
-This implementation uses DBus to communicate through the SystemNotifier/AppIndicator spec, older tray implementations may not load the icon.
-
-If you are running an older desktop environment, or system tray provider, you may require a proxy app which can convert the new DBus calls to the old format.
-The recommended tool for Gnome based trays is [snixembed](https://git.sr.ht/~steef/snixembed), others are available.
-Search for "StatusNotifierItems XEmbedded" in your package manager.
-
-## Credits
-
-- https://github.com/getlantern/systray
-- https://github.com/xilp/systray
-- https://github.com/cratonica/trayhost
-
-# Systray
-
-systray is a Linux-only Go library to place an icon and menu in the notification area.
-This repository is a fork of [getlantern/systray](https://github.com/getlantern/systray)
-removing the GTK dependency and support for legacy linux system tray.
-
-## Features
-
-* Supported on Linux and many BSD systems
-* Menu items can be checked and/or disabled
-* Methods may be called from any Goroutine
-* tray icon supports mouse click, double click, and right click
-
-## API
-
-```go
-package main
-
-import "github.com/energye/systray"
-import "github.com/energye/systray/icon"
-
-func main() {
-	systray.Run(onReady, onExit)
-}
-
-func onReady() {
-	systray.SetIcon(icon.Data)
-	systray.SetTitle("Awesome App")
-	systray.SetTooltip("Pretty awesome超级棒")
-	systray.SetOnClick(func() {
-		fmt.Println("SetOnClick")
-	})
-	systray.SetOnDClick(func() {
-		fmt.Println("SetOnDClick")
-	})
-	systray.SetOnRClick(func(menu systray.IMenu) {
-		menu.ShowMenu()
-		fmt.Println("SetOnRClick")
-	})
-	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
-
-	// Sets the icon of a menu item.
-	mQuit.SetIcon(icon.Data)
-}
-
-func onExit() {
-	// clean up here
-}
-```
-
-### Run in another toolkit
-
-Most graphical toolkits will grab the main loop so the `Run` code above is not possible.
-For this reason there is another entry point `RunWithExternalLoop`.
-This function of the library returns a start and end function that should be called
-when the application has started and will end, to loop in appropriate features.
-
-Note: this package requires cgo, so make sure you set `CGO_ENABLED=1` before building.
-
-## Try the example app!
-
-Have go v1.12+ or higher installed? Here's an example to get started on Linux:
-
-```sh
-git clone https://github.com/energye/systray
-cd systray/example
-go run .
-```
-
-Now look for *Awesome App* in your system tray!
-
-![Awesome App screenshot](example/demo.png)
-
-## Platform notes
-
-### Linux/BSD
-
-This implementation uses DBus to communicate through the SystemNotifier/AppIndicator spec, older tray implementations may not load the icon.
-
-If you are running an older desktop environment, or system tray provider, you may require a proxy app which can convert the new DBus calls to the old format.
-The recommended tool for Gnome based trays is [snixembed](https://git.sr.ht/~steef/snixembed), others are available.
-Search for "StatusNotifierItems XEmbedded" in your package manager.
-
-## Utilisation en tant que bibliothèque partagée (.so) avec JNA (Kotlin)
-
-Ce dépôt peut maintenant être compilé en bibliothèque partagée Linux (.so) utilisable depuis la JVM via JNA, y compris depuis Kotlin.
-
-### 1) Construire la bibliothèque partagée
-
-Prérequis: Go avec CGO activé, un toolchain C, et un environnement Linux.
-
-- Via Makefile:
-
-```sh
+```bash
+cd linuxlibnew
 make build-so
 ```
 
-Cette cible Makefile applique des options d'optimisation pour minimiser la taille de la bibliothèque (.so): -trimpath, -ldflags "-s -w -buildid= ...", CGO_CFLAGS=-Os, GC des sections (--gc-sections) et strip final.
+This produces optimized artifacts under `linuxlibnew/dist/`:
+- `dist/libsystray.so`
+- `dist/libsystray.h`
 
-- Ou manuellement:
+2) Manual build
 
-```sh
-GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -buildmode=c-shared -o dist/libsystray.so ./jna
-# Le fichier d'en-tête C généré sera: dist/libsystray.h
+```bash
+cd linuxlibnew
+GOOS=linux GOARCH=amd64 CGO_ENABLED=1 \
+  go build -buildmode=c-shared -o dist/libsystray.so ./jna
+# Header will be generated at: dist/libsystray.h
 ```
 
-Le build génère:
-- dist/libsystray.so: la bibliothèque native à charger via JNA
-- dist/libsystray.h: l'en-tête C décrivant les symboles exportés
+Notes:
+- Set `LD_LIBRARY_PATH` or copy the `.so` into a location discoverable by your app when running outside of Compose Native Tray.
 
-### 2) API C exportée (pour JNA)
+## Exported C API (ABI)
 
-Les fonctions suivantes sont exposées par la bibliothèque .so:
+The shared library exports the following C functions. These are consumed by Kotlin/JNA in `LinuxLibTray`:
+
 - void Systray_InitCallbacks(void_cb ready, void_cb exit, void_cb onClick, void_cb onRClick, menu_item_cb onMenuItem)
-- void Systray_Run()
 - void Systray_PrepareExternalLoop()
 - void Systray_NativeStart()
 - void Systray_NativeEnd()
@@ -209,9 +68,10 @@ Les fonctions suivantes sont exposées par la bibliothèque .so:
 - void Systray_SetIcon(const char* bytes, int length)
 - void Systray_SetTitle(const char* title)
 - void Systray_SetTooltip(const char* tooltip)
+- void Systray_ResetMenu()
+- void Systray_AddSeparator()
 - unsigned int Systray_AddMenuItem(const char* title, const char* tooltip)
 - unsigned int Systray_AddMenuItemCheckbox(const char* title, const char* tooltip, int checked)
-- // Sous-menus et opérations par item:
 - unsigned int Systray_AddSubMenuItem(unsigned int parentId, const char* title, const char* tooltip)
 - unsigned int Systray_AddSubMenuItemCheckbox(unsigned int parentId, const char* title, const char* tooltip, int checked)
 - int Systray_MenuItem_SetTitle(unsigned int id, const char* title)
@@ -222,226 +82,78 @@ Les fonctions suivantes sont exposées par la bibliothèque .so:
 - void Systray_MenuItem_Check(unsigned int id)
 - void Systray_MenuItem_Uncheck(unsigned int id)
 - void Systray_SetMenuItemIcon(const char* bytes, int length, unsigned int id)
-- void Systray_AddSeparator()
-- void Systray_ResetMenu()
+- void Systray_GetLastClickXY(int* outX, int* outY)
 
-Notes:
-- Les callbacks sont optionnels (passez NULL si vous n'en avez pas besoin). Les callbacks sont invoqués sur le thread de l'event loop.
-- La fonction onMenuItem reçoit l'ID (uint32) de l'item cliqué. Les fonctions AddMenuItem... renvoient cet ID.
-- Systray_Run() est bloquante. Si vous avez déjà une boucle d'événements dans votre app, utilisez le trio: Systray_PrepareExternalLoop() puis Systray_NativeStart() et Systray_NativeEnd().
+Callbacks are optional (pass NULL if you don’t need one). The `menu_item_cb` receives the clicked menu item id.
 
-### 3) Exemple d'utilisation avec Kotlin/JNA
+Event-loop integration:
+- If your app manages its own event loop, use `Systray_PrepareExternalLoop()`, `Systray_NativeStart()`, and `Systray_NativeEnd()`.
+- Otherwise, the original Go `Run` loop is wrapped by the bridge, and Compose Native Tray uses the external-loop mode.
 
-Ajoutez JNA dans vos dépendances (Gradle Kotlin DSL):
+## Using it from Compose Native Tray (Kotlin/JNA)
+
+Compose Native Tray already contains the JNA mappings under `src/commonMain/kotlin/.../linux/LinuxLibTray.kt` and ships a prebuilt lib. You usually don’t need to call this API directly.
+
+If you build a custom `.so` or run standalone, ensure the library named "systray" is discoverable by JNA:
 
 ```kotlin
-dependencies {
-    implementation("net.java.dev.jna:jna:5.14.0")
-}
+// Example: add a search path at runtime (only needed when not using the bundled resource)
+com.sun.jna.NativeLibrary.addSearchPath("systray", "/absolute/path/to/linuxlibnew/dist")
 ```
 
-Déclarez les interfaces JNA qui mappent la lib native:
+Minimal JNA usage example (standalone):
 
 ```kotlin
 import com.sun.jna.Callback
-import com.sun.jna.Library
 import com.sun.jna.Native
-import com.sun.jna.NativeLibrary
-import com.sun.jna.Pointer
+import com.sun.jna.ptr.IntByReference
 
-interface SystrayNative : Library {
-    fun Systray_InitCallbacks(ready: VoidCb?, exit: VoidCb?, onClick: VoidCb?, onRClick: VoidCb?, onMenuItem: MenuItemCb?)
-    fun Systray_Run()
-    fun Systray_PrepareExternalLoop()
-    fun Systray_NativeStart()
-    fun Systray_NativeEnd()
-    fun Systray_Quit()
-    fun Systray_SetIcon(bytes: Pointer, length: Int)
-    fun Systray_SetTitle(title: String?)
-    fun Systray_SetTooltip(tooltip: String?)
-    fun Systray_AddMenuItem(title: String?, tooltip: String?): Int
-    fun Systray_AddMenuItemCheckbox(title: String?, tooltip: String?, checked: Int): Int
-    fun Systray_AddSeparator()
-    fun Systray_ResetMenu()
-    // New: submenu and per-item operations
-    fun Systray_AddSubMenuItem(parentId: Int, title: String?, tooltip: String?): Int
-    fun Systray_AddSubMenuItemCheckbox(parentId: Int, title: String?, tooltip: String?, checked: Int): Int
-    fun Systray_MenuItem_SetTitle(id: Int, title: String?): Int
-    fun Systray_MenuItem_Enable(id: Int)
-    fun Systray_MenuItem_Disable(id: Int)
-    fun Systray_MenuItem_Show(id: Int)
-    fun Systray_MenuItem_Hide(id: Int)
-    fun Systray_MenuItem_Check(id: Int)
-    fun Systray_MenuItem_Uncheck(id: Int)
-    fun Systray_SetMenuItemIcon(bytes: Pointer, length: Int, id: Int)
-}
-
-interface VoidCb : Callback { fun invoke() }
-interface MenuItemCb : Callback { fun invoke(id: Int) }
-
-object SystrayLib {
-    val INSTANCE: SystrayNative by lazy {
-        // Assurez-vous que libsystray.so est dans java.library.path ou LD_LIBRARY_PATH
-        NativeLibrary.addSearchPath("systray", "/chemin/vers/dist")
-        Native.load("systray", SystrayNative::class.java)
-    }
+internal object LinuxLibTray {
+    interface VoidCallback : Callback { fun invoke() }
+    interface MenuItemCallback : Callback { fun invoke(menuId: Int) }
+    init { Native.register("systray") }
+    @JvmStatic external fun Systray_InitCallbacks(ready: VoidCallback?, exit: VoidCallback?, onClick: VoidCallback?, onRClick: VoidCallback?, onMenuItem: MenuItemCallback?)
+    @JvmStatic external fun Systray_PrepareExternalLoop()
+    @JvmStatic external fun Systray_NativeStart()
+    @JvmStatic external fun Systray_NativeEnd()
+    @JvmStatic external fun Systray_Quit()
+    @JvmStatic external fun Systray_SetIcon(iconBytes: ByteArray, length: Int)
+    @JvmStatic external fun Systray_SetTitle(title: String?)
+    @JvmStatic external fun Systray_SetTooltip(tooltip: String?)
+    @JvmStatic external fun Systray_ResetMenu()
+    @JvmStatic external fun Systray_AddSeparator()
+    @JvmStatic external fun Systray_AddMenuItem(title: String?, tooltip: String?): Int
+    @JvmStatic external fun Systray_AddMenuItemCheckbox(title: String?, tooltip: String?, checked: Int): Int
+    @JvmStatic external fun Systray_AddSubMenuItem(parentID: Int, title: String?, tooltip: String?): Int
+    @JvmStatic external fun Systray_AddSubMenuItemCheckbox(parentID: Int, title: String?, tooltip: String?, checked: Int): Int
+    @JvmStatic external fun Systray_MenuItem_SetTitle(id: Int, title: String?): Int
+    @JvmStatic external fun Systray_MenuItem_Enable(id: Int)
+    @JvmStatic external fun Systray_MenuItem_Disable(id: Int)
+    @JvmStatic external fun Systray_MenuItem_Show(id: Int)
+    @JvmStatic external fun Systray_MenuItem_Hide(id: Int)
+    @JvmStatic external fun Systray_MenuItem_Check(id: Int)
+    @JvmStatic external fun Systray_MenuItem_Uncheck(id: Int)
+    @JvmStatic external fun Systray_SetMenuItemIcon(iconBytes: ByteArray, length: Int, id: Int)
+    @JvmStatic external fun Systray_GetLastClickXY(outX: IntByReference, outY: IntByReference)
 }
 ```
 
-Utilisation dans votre app Kotlin (exemple simple):
+## Platform notes (Linux/BSD)
 
-```kotlin
-fun main() {
-    val lib = SystrayLib.INSTANCE
+- This implementation uses DBus to communicate with StatusNotifier/AppIndicator providers. Very old trays may not display the icon.
+- On desktop environments missing a StatusNotifier host, you may need a bridge like snixembed (for GNOME) or alternatives available in your distribution. Search for "StatusNotifierItems XEmbedded" in your package manager.
 
-    lib.Systray_InitCallbacks(
-        ready = object : VoidCb { override fun invoke() { println("systray prêt") } },
-        exit  = object : VoidCb { override fun invoke() { println("systray exit") } },
-        onClick = object : VoidCb { override fun invoke() { println("icône cliquée") } },
-        onRClick = object : VoidCb { override fun invoke() { println("clic droit") } },
-        onMenuItem = object : MenuItemCb { override fun invoke(id: Int) { println("menu item cliqué: $id") } },
-    )
+## Development tips
 
-    Thread { lib.Systray_Run() }.start()
+- Keep references to JNA callbacks to avoid them being garbage-collected.
+- Don’t block the JVM thread inside callbacks; dispatch to background work if needed.
+- If you add new exported functions in Go, update both the generated header and the Kotlin bindings.
 
-    lib.Systray_SetTitle("Mon App")
-    lib.Systray_SetTooltip("Fonctionne avec JNA")
+## License and credits
 
-    // Charger une icône en mémoire (PNG) et la passer à SetIcon
-    val iconStream = SystrayLib::class.java.getResourceAsStream("/icon.png")
-        ?: error("Ressource /icon.png introuvable dans le classpath")
-    val iconBytes = iconStream.readBytes()
-    val iconMem = com.sun.jna.Memory(iconBytes.size.toLong()).apply {
-        write(0, iconBytes, 0, iconBytes.size)
-    }
-    lib.Systray_SetIcon(iconMem, iconBytes.size)
-
-    val quitId = lib.Systray_AddMenuItem("Quitter", "Fermer l'application")
-    println("Quit item id = $quitId")
-}
-```
-
-Exemple complet: menu, sous-menus, menus dynamiques (comme la démo Go):
-
-```kotlin
-fun main() {
-    val lib = SystrayLib.INSTANCE
-
-    // 1) Callbacks
-    lateinit var ids: Map<String, Int>
-    var shown = true
-
-    lib.Systray_InitCallbacks(
-        ready = object : VoidCb { override fun invoke() { println("systray prêt") } },
-        exit  = object : VoidCb { override fun invoke() { println("systray exit") } },
-        onClick = object : VoidCb { override fun invoke() { println("icône cliquée") } },
-        onRClick = object : VoidCb { override fun invoke() { println("clic droit") } },
-        onMenuItem = object : MenuItemCb { override fun invoke(id: Int) {
-            when (id) {
-                ids["mChange"] -> lib.Systray_MenuItem_SetTitle(id, "I've Changed")
-                ids["mChecked"] -> {
-                    // toggle check and title
-                    // (no direct "isChecked" query; maintain state yourself if needed)
-                    // We simply flip title and check state based on current title heuristic
-                    // In une app réelle, gardez un état côté JVM.
-                    lib.Systray_MenuItem_Check(id)
-                    lib.Systray_MenuItem_SetTitle(id, "Checked")
-                }
-                ids["mEnabled"] -> {
-                    lib.Systray_MenuItem_SetTitle(id, "Disabled")
-                    lib.Systray_MenuItem_Disable(id)
-                }
-                ids["subToggle"] -> {
-                    // Toggle: check subToggle, hide/show panic, enable/disable mEnabled
-                    shown = !shown
-                    if (shown) {
-                        lib.Systray_MenuItem_Uncheck(ids["subToggle"]!!)
-                        lib.Systray_MenuItem_Show(ids["subPanic"]!!)
-                        lib.Systray_MenuItem_Show(ids["mEnabled"]!!)
-                        lib.Systray_MenuItem_Enable(ids["mEnabled"]!!)
-                    } else {
-                        lib.Systray_MenuItem_Check(ids["subToggle"]!!)
-                        lib.Systray_MenuItem_Hide(ids["subPanic"]!!)
-                        lib.Systray_MenuItem_Hide(ids["mEnabled"]!!)
-                        lib.Systray_MenuItem_Disable(ids["mEnabled"]!!)
-                    }
-                }
-                ids["mToggle"] -> {
-                    // Do the same as clicking the submenu toggle
-                    lib.Systray_MenuItem_Check(ids["subToggle"]!!)
-                    lib.Systray_MenuItem_Hide(ids["subPanic"]!!)
-                    lib.Systray_MenuItem_Hide(ids["mEnabled"]!!)
-                    lib.Systray_MenuItem_Disable(ids["mEnabled"]!!)
-                    shown = false
-                }
-                ids["mReset"] -> {
-                    // Reset entire menu and rebuild minimal items
-                    lib.Systray_ResetMenu()
-                    val q = lib.Systray_AddMenuItem("Quit", "Quit the whole app")
-                    println("Reset done, new quit id=$q")
-                }
-            }
-        } },
-    )
-
-    // 2) Run
-    Thread { lib.Systray_Run() }.start()
-
-    // 3) Tray title, tooltip and icon
-    lib.Systray_SetTitle("Energy Sys Tray")
-    lib.Systray_SetTooltip("Energy tooltip")
-
-    val iconBytes = SystrayLib::class.java.getResourceAsStream("/icon.png")!!.readBytes()
-    val iconMem = com.sun.jna.Memory(iconBytes.size.toLong()).apply { write(0, iconBytes, 0, iconBytes.size) }
-    lib.Systray_SetIcon(iconMem, iconBytes.size)
-
-    // 4) Build menu tree
-    val mQuit = lib.Systray_AddMenuItem("Quit", "Quit the whole app")
-    val mChange = lib.Systray_AddMenuItem("Change Me", "Change Me")
-    val mChecked = lib.Systray_AddMenuItemCheckbox("Checked", "Check Me", 1)
-    val mEnabled = lib.Systray_AddMenuItem("Enabled", "Enabled")
-    lib.Systray_AddMenuItem("Ignored", "Ignored")
-
-    val subTop = lib.Systray_AddMenuItem("SubMenuTop", "SubMenu Test (top)")
-    val subMiddle = lib.Systray_AddSubMenuItem(subTop, "SubMenuMiddle", "SubMenu Test (middle)")
-    val subToggle = lib.Systray_AddSubMenuItemCheckbox(subMiddle, "SubMenuBottom - Toggle Panic!", "Hide/Show Panic!", 0)
-    val subPanic = lib.Systray_AddSubMenuItem(subMiddle, "SubMenuBottom - Panic!", "SubMenu Test (bottom)")
-
-    // Set icon on subPanic item
-    lib.Systray_SetMenuItemIcon(iconMem, iconBytes.size, subPanic)
-
-    lib.Systray_AddSeparator()
-    val mToggle = lib.Systray_AddMenuItem("Toggle", "Toggle some menu items")
-    val mReset = lib.Systray_AddMenuItem("Reset", "Reset all items")
-
-    // Store ids for callback switch
-    ids = mapOf(
-        "mQuit" to mQuit,
-        "mChange" to mChange,
-        "mChecked" to mChecked,
-        "mEnabled" to mEnabled,
-        "subToggle" to subToggle,
-        "subPanic" to subPanic,
-        "mToggle" to mToggle,
-        "mReset" to mReset,
-    )
-}
-```
-
-Conseils:
-- Assurez-vous que libsystray.so est trouvable: exportez LD_LIBRARY_PATH=.../dist ou utilisez NativeLibrary.addSearchPath.
-- Les callbacks JNA doivent rester référencés (gardez des références pour éviter le GC).
-- Les appels JNA se font côté thread JVM; évitez les longues opérations dans les callbacks.
-
-### 4) Compatibilité et limitations
-
-- Linux uniquement.
-- Nécessite un environnement de bureau supportant le protocole StatusNotifierItem/AppIndicator.
-- Les sous-menus et cases à cocher sont pris en charge comme dans l'API Go.
-- Double-clic: nous réutilisons le même callback que onClick par défaut côté pont natif. Vous pouvez distinguer côté Go si nécessaire.
-
-## Credits
-
-- https://github.com/getlantern/systray
-- https://github.com/xilp/systray
-- https://github.com/cratonica/trayhost
+- License: see `linuxlibnew/LICENSE`
+- Credits:
+    - https://github.com/energye/systray (base of this fork)
+    - https://github.com/getlantern/systray (original project)
+    - https://github.com/xilp/systray
+    - https://github.com/cratonica/trayhost
