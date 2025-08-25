@@ -31,6 +31,8 @@ Prerequisites:
 - Go with CGO enabled (CGO_ENABLED=1)
 - A C toolchain (e.g., gcc)
 
+Astuce (Debian/Ubuntu) : pour installer Go, exécutez : `sudo apt install golang`
+
 Options:
 
 1) With Makefile (recommended)
