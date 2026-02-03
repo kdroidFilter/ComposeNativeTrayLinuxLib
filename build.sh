@@ -9,6 +9,10 @@ echo "Building Linux systray shared library..."
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Use NATIVE_LIBS_OUTPUT_DIR env var if set, otherwise default to src/commonMain/resources
+OUTPUT_DIR="${NATIVE_LIBS_OUTPUT_DIR:-$SCRIPT_DIR/../src/commonMain/resources}"
+echo "Output dir for linux is: $OUTPUT_DIR"
+
 # Inform about architecture if provided
 if [[ -n "$GOARCH" ]]; then
   echo "Using GOARCH=$GOARCH"
@@ -19,8 +23,7 @@ fi
 # Build the shared library using the provided Makefile target
 make build-so
 
-# Destination directory: use NATIVE_LIBS_OUTPUT_DIR if set, otherwise default to resources
-OUTPUT_DIR="${NATIVE_LIBS_OUTPUT_DIR:-$SCRIPT_DIR/../src/commonMain/resources}"
+# Destination directory
 DEST_DIR="$OUTPUT_DIR/linux-x86-64"
 mkdir -p "$DEST_DIR"
 
