@@ -19,11 +19,12 @@ fi
 # Build the shared library using the provided Makefile target
 make build-so
 
-# Destination directory in the Kotlin resources
-DEST_DIR="../src/commonMain/resources/linux-x86-64"
+# Destination directory: use NATIVE_LIBS_OUTPUT_DIR if set, otherwise default to resources
+OUTPUT_DIR="${NATIVE_LIBS_OUTPUT_DIR:-$SCRIPT_DIR/../src/commonMain/resources}"
+DEST_DIR="$OUTPUT_DIR/linux-x86-64"
 mkdir -p "$DEST_DIR"
 
-# Copy the generated .so to the resources directory
+# Copy the generated .so to the destination directory
 cp -f dist/libsystray.so "$DEST_DIR/libsystray.so"
 
 echo "Copied dist/libsystray.so to $DEST_DIR/libsystray.so"
